@@ -1,18 +1,25 @@
 import pandas as pd
 
-df = pd.read_csv('../data/cleaned_superstore.csv')
+
+def _ensure_order_date_datetime(df):
+    if not pd.api.types.is_datetime64_any_dtype(df["Order Date"]):
+        df = df.copy()
+        df["Order Date"] = pd.to_datetime(df["Order Date"], errors="coerce")
+    return df
+
 
 def create_row_docs(df):
+    df = _ensure_order_date_datetime(df)
     row_docs = []
 
-    for row in df.itertuples(index=False):
-        date_str = row.Order_Date.strftime("%Y-%m-%d")
-        sales = round(row.Sales, 2)
-        profit = round(row.Profit, 2)
-        discount = round(row.Discount, 2)
+    for _, row in df.iterrows():
+        date_str = row["Order Date"].strftime("%Y-%m-%d")
+        sales = round(row["Sales"], 2)
+        profit = round(row["Profit"], 2)
+        discount = round(row["Discount"], 2)
 
         text = (
-            f"Order on {date_str}: Customer {row['Customer Name']} "
+            f"Order on {date_str}: Customer {row['Customer ID']} "
             f"({row['Segment']}) purchased {row['Quantity']} units of "
             f"{row['Product Name']} (Category: {row['Category']}, Sub-Category: {row['Sub-Category']}) "
             f"in {row['City']}, {row['Region']}. "
@@ -32,6 +39,7 @@ def create_row_docs(df):
     return row_docs
 
 def create_yearly_docs(df):
+    df = _ensure_order_date_datetime(df)
     docs = []
     
     yearly = df.groupby(df["Order Date"].dt.year).agg({
@@ -66,6 +74,7 @@ def create_yearly_docs(df):
     return docs
 
 def create_monthly_docs(df):
+    df = _ensure_order_date_datetime(df)
     docs = []
     
     df["Year"] = df["Order Date"].dt.year
@@ -100,6 +109,7 @@ def create_monthly_docs(df):
     return docs
 
 def create_trend_summary_doc(df):
+    df = _ensure_order_date_datetime(df)
     docs = []
     
     yearly = df.groupby(df["Order Date"].dt.year)["Sales"].sum().reset_index()
@@ -122,6 +132,7 @@ def create_trend_summary_doc(df):
     return docs
 
 def create_top_months_doc(df):
+    df = _ensure_order_date_datetime(df)
     docs = []
     
     df["YearMonth"] = df["Order Date"].dt.to_period("M")
@@ -150,7 +161,7 @@ def create_category_docs(df):
         "Discount": "mean"
     }).reset_index()
 
-    for _, row in grouped.itertuples(index=False):
+    for row in grouped.itertuples(index=False):
         sales = round(row.Sales, 2)
         profit = round(row.Profit, 2)
         quantity = int(row.Quantity)
@@ -181,12 +192,12 @@ def create_subcategory_docs(df):
         "Discount": "mean"
     }).reset_index()
 
-    for _, row in grouped.itertuples(index=False):
+    for row in grouped.itertuples(index=False):
         sales = round(row.Sales, 2)
         profit = round(row.Profit, 2)
         quantity = int(row.Quantity)
         discount = round(row.Discount, 2)
-        subcategory = row._2
+        subcategory = row[1]
 
         text = (
             f"Sub-category {subcategory} in category {row.Category} "
@@ -268,7 +279,7 @@ def create_region_docs(df):
         "Quantity": "sum"
     }).reset_index()
 
-    for _, row in grouped.itertuples(index=False):
+    for row in grouped.itertuples(index=False):
         sales = round(row.Sales, 2)
         profit = round(row.Profit, 2)
         quantity = int(row.Quantity)
@@ -296,7 +307,7 @@ def create_state_docs(df):
         "Profit": "sum"
     }).reset_index()
 
-    for _, row in grouped.itertuples(index=False):
+    for row in grouped.itertuples(index=False):
         sales = round(row.Sales, 2)
         profit = round(row.Profit, 2)
 
@@ -322,7 +333,7 @@ def create_city_docs(df):
         "Profit": "sum"
     }).reset_index()
 
-    for _, row in grouped.itertuples(index=False):
+    for row in grouped.itertuples(index=False):
         sales = round(row.Sales, 2)
         profit = round(row.Profit, 2)
 
@@ -400,20 +411,125 @@ def create_region_comparison_doc(df):
 
     return docs
 
-documents = []
-documents += create_row_docs(df)
-documents += create_yearly_docs(df)
-documents += create_monthly_docs(df)
-documents += create_trend_summary_doc(df)
-documents += create_top_months_doc(df)
-documents += create_category_docs(df)
-documents += create_subcategory_docs(df)
-documents += create_top_category_doc(df)
-documents += create_top_subcategory_doc(df)
-documents += create_discount_category_doc(df)
-documents += create_region_docs(df)
-documents += create_state_docs(df)
-documents += create_city_docs(df)
-documents += create_top_region_doc(df)
-documents += create_category_comparison_doc(df)
-documents += create_region_comparison_doc(df)
+def create_segment_docs(df):
+    docs = []
+    
+    grouped = df.groupby("Segment").agg({
+        "Sales": "sum",
+        "Profit": "sum",
+        "Quantity": "sum",
+        "Discount": "mean"
+    }).reset_index()
+
+    for _, row in grouped.iterrows():
+        text = (
+            f"Segment {row['Segment']} generated total sales of {round(row['Sales'],2)}€, "
+            f"total profit of {round(row['Profit'],2)}€, and sold {int(row['Quantity'])} units. "
+            f"The average discount was {round(row['Discount'],2)}."
+        )
+
+        metadata = {
+            "type": "segment_summary",
+            "segment": row["Segment"]
+        }
+
+        docs.append({"text": text, "metadata": metadata})
+
+    return docs
+
+def create_category_trend_docs(df):
+    docs = []
+    
+    df["Year"] = df["Order Date"].dt.year
+
+    grouped = df.groupby(["Category", "Year"]).agg({
+        "Sales": "sum",
+        "Profit": "sum"
+    }).reset_index()
+
+    for _, row in grouped.iterrows():
+        text = (
+            f"In {int(row['Year'])}, category {row['Category']} generated "
+            f"{round(row['Sales'],2)}€ in sales and {round(row['Profit'],2)}€ in profit."
+        )
+
+        metadata = {
+            "type": "category_trend",
+            "category": row["Category"],
+            "year": int(row["Year"])
+        }
+
+        docs.append({"text": text, "metadata": metadata})
+
+    return docs
+
+def create_region_category_docs(df):
+    docs = []
+    
+    grouped = df.groupby(["Region", "Category"]).agg({
+        "Sales": "sum",
+        "Profit": "sum"
+    }).reset_index()
+
+    for _, row in grouped.iterrows():
+        text = (
+            f"In the {row['Region']} region, category {row['Category']} generated "
+            f"{round(row['Sales'],2)}€ in sales and {round(row['Profit'],2)}€ in profit."
+        )
+
+        metadata = {
+            "type": "region_category_summary",
+            "region": row["Region"],
+            "category": row["Category"]
+        }
+
+        docs.append({"text": text, "metadata": metadata})
+
+    return docs
+
+def create_top_customers_doc(df, top_n=5):
+    docs = []
+    
+    grouped = df.groupby("Customer Name").agg({
+        "Sales": "sum",
+        "Profit": "sum"
+    }).reset_index()
+
+    top = grouped.sort_values("Sales", ascending=False).head(top_n)
+
+    text = "Top customers by sales are: " + ", ".join(
+        [
+            f"{row['Customer Name']} ({round(row['Sales'],2)}€)"
+            for _, row in top.iterrows()
+        ]
+    )
+
+    docs.append({
+        "text": text,
+        "metadata": {"type": "top_customers"}
+    })
+
+    return docs
+
+def create_segment_comparison_doc(df):
+    docs = []
+    
+    grouped = df.groupby("Segment")["Sales"].sum().reset_index()
+
+    if len(grouped) >= 2:
+        sorted_segments = grouped.sort_values("Sales", ascending=False)
+
+        best = sorted_segments.iloc[0]
+        worst = sorted_segments.iloc[-1]
+
+        text = (
+            f"The best performing segment is {best['Segment']} with {round(best['Sales'],2)}€ in sales, "
+            f"while the lowest is {worst['Segment']} with {round(worst['Sales'],2)}€."
+        )
+
+        docs.append({
+            "text": text,
+            "metadata": {"type": "segment_comparison"}
+        })
+
+    return docs
