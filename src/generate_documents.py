@@ -490,8 +490,11 @@ def create_region_category_docs(df):
 
 def create_top_customers_doc(df, top_n=5):
     docs = []
-    
-    grouped = df.groupby("Customer Name").agg({
+
+    # cleaned_superstore.csv uses Customer ID; some datasets may include Customer Name.
+    customer_col = "Customer Name" if "Customer Name" in df.columns else "Customer ID"
+
+    grouped = df.groupby(customer_col).agg({
         "Sales": "sum",
         "Profit": "sum"
     }).reset_index()
@@ -500,7 +503,7 @@ def create_top_customers_doc(df, top_n=5):
 
     text = "Top customers by sales are: " + ", ".join(
         [
-            f"{row['Customer Name']} ({round(row['Sales'],2)}€)"
+            f"{row[customer_col]} ({round(row['Sales'],2)}€)"
             for _, row in top.iterrows()
         ]
     )
