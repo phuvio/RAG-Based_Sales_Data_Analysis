@@ -438,6 +438,7 @@ def create_segment_docs(df):
     return docs
 
 def create_category_trend_docs(df):
+    df = _ensure_order_date_datetime(df)
     docs = []
     
     df["Year"] = df["Order Date"].dt.year
