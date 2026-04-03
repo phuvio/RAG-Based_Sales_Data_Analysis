@@ -24,6 +24,7 @@ data/
 *.xls
 *.json
 *.parquet
+chroma_db/
 
 # Environment variables
 .env
