@@ -537,3 +537,30 @@ def create_segment_comparison_doc(df):
         })
 
     return docs
+
+
+def generate_all_documents(df):
+    docs = []
+    docs.extend(create_row_docs(df))
+    docs.extend(create_yearly_docs(df))
+    docs.extend(create_monthly_docs(df))
+    docs.extend(create_trend_summary_doc(df))
+    docs.extend(create_top_months_doc(df))
+    docs.extend(create_category_docs(df))
+    docs.extend(create_subcategory_docs(df))
+    docs.extend(create_top_category_doc(df))
+    docs.extend(create_top_subcategory_doc(df))
+    docs.extend(create_discount_category_doc(df))
+    docs.extend(create_region_docs(df))
+    docs.extend(create_state_docs(df))
+    docs.extend(create_city_docs(df))
+    docs.extend(create_top_region_doc(df))
+    docs.extend(create_category_comparison_doc(df))
+    docs.extend(create_region_comparison_doc(df))
+    docs.extend(create_segment_docs(df))
+    docs.extend(create_category_trend_docs(df))
+    docs.extend(create_region_category_docs(df))
+    docs.extend(create_top_customers_doc(df))
+    docs.extend(create_segment_comparison_doc(df))
+
+    return docs
