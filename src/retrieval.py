@@ -196,6 +196,9 @@ def retrieve_relevant_chunks(query: str, vectordb) -> list[Document]:
             k=20,
             filter=where_filter,
         )
+
+        if len(results) < 3:
+            results = vectordb.similarity_search(query, k=20)
     else:
         results = vectordb.similarity_search(query, k=20)
 
