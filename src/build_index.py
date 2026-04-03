@@ -12,11 +12,28 @@ client = chromadb.PersistentClient(path=str(DB_PATH))
 embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 def build_index(df):
+    """
+    Build a ChromaDB vector index from a sales DataFrame.
 
-    # Generoi dokumentit
+    Converts the DataFrame into text documents via generate_all_documents,
+    computes sentence-transformer embeddings for every document, then stores
+    them in a persistent ChromaDB collection called COLLECTION_NAME.
+
+    The collection is always recreated from scratch so that repeated calls
+    produce a clean, duplicate-free index.  Documents are written in batches
+    of 5,000 to stay within ChromaDB's maximum add-batch size.
+
+    Args:
+        df (pandas.DataFrame): The cleaned sales DataFrame.  Must contain the
+            columns expected by generate_all_documents (e.g. 'Order Date',
+            'Sales', 'Profit', 'Region', 'Category', etc.).
+
+    Returns:
+        chromadb.Collection: The newly created and populated ChromaDB
+            collection, ready for similarity queries.
+    """
     raw_docs = generate_all_documents(df)
 
-    # Muunna LangChain Document -objekteiksi
     documents = [
         Document(
             page_content=doc["text"],
