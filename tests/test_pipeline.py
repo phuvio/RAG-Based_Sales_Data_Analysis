@@ -19,8 +19,9 @@ class TestBuildPrompt:
         prompt = pipeline.build_prompt(query, docs)
 
         assert query in prompt
-        assert "Question:" in prompt
-        assert "Answer:" in prompt
+        assert "QUESTION:" in prompt
+        assert "ANSWER:" in prompt
+        assert "SYSTEM:" in prompt
 
     def test_build_prompt_includes_all_document_contents(self):
         docs = [
@@ -32,13 +33,13 @@ class TestBuildPrompt:
 
         assert "Doc one content." in prompt
         assert "Doc two content." in prompt
-        assert "Context:" in prompt
+        assert "CONTEXT:" in prompt
 
     def test_build_prompt_handles_empty_docs(self):
         prompt = pipeline.build_prompt("q", [])
 
-        assert "Context:" in prompt
-        assert "Question:" in prompt
+        assert "CONTEXT:" in prompt
+        assert "QUESTION:" in prompt
 
 
 class TestGenerateAnswer:

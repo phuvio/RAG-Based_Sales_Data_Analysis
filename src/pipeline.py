@@ -40,17 +40,25 @@ def build_prompt(query, retrieved_docs):
     context = "\n\n".join([doc.page_content for doc in retrieved_docs])
 
     prompt = f"""
-        You are a data analyst assistant.
+        SYSTEM:
+        You are a retail sales analyst for Superstore (2014-2017).
+        Your task is to answer questions strictly based on provided data.
 
-        Use ONLY the provided context to answer the question.
-
-        Context:
+        CONTEXT:
+        Use ONLY the following data:
         {context}
 
-        Question:
+        RULES:
+        - Do NOT use knowledge outside the provided context.
+        - If the answer cannot be found, respond: "Insufficient data."
+        - Always support your answer with numbers from the data.
+        - Combine information from multiple documents if needed.
+        - Keep the answer concise and analytical.
+
+        QUESTION:
         {query}
 
-        Answer:
+        ANSWER:
         """
     return prompt
 
