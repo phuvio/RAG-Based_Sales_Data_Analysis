@@ -67,6 +67,17 @@ class TestGenerateAnswer:
 
         assert result == "final answer"
 
+    def test_generate_answer_returns_message_when_llm_fails(self, monkeypatch):
+        mock_llm = MagicMock()
+        mock_llm.invoke.side_effect = RuntimeError("connection refused")
+        monkeypatch.setattr(pipeline, "llm", mock_llm)
+
+        docs = [Document(page_content="ctx", metadata={})]
+        result = pipeline.generate_answer("q", docs)
+
+        assert "LLM connection failed" in result
+        assert "connection refused" in result
+
 
 class TestAskQuestion:
     def test_ask_question_calls_retrieve_and_generate(self, monkeypatch):

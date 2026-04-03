@@ -193,13 +193,13 @@ def retrieve_relevant_chunks(query: str, vectordb) -> list[Document]:
         where_filter = {"type": {"$in": intent_types}}
         results = vectordb.similarity_search(
             query,
-            k=20,
+            k=5,
             filter=where_filter,
         )
 
         if len(results) < 3:
-            results = vectordb.similarity_search(query, k=20)
+            results = vectordb.similarity_search(query, k=5)
     else:
-        results = vectordb.similarity_search(query, k=20)
+        results = vectordb.similarity_search(query, k=5)
 
     return results

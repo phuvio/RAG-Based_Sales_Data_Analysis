@@ -11,7 +11,7 @@ class ChromaRetrieverAdapter:
     def __init__(self):
         self._collection = client.get_collection(name=COLLECTION_NAME)
 
-    def similarity_search(self, query, k=20, filter=None):
+    def similarity_search(self, query, k=5, filter=None):
         query_embedding = embedding_model.encode([query])[0].tolist()
         results = self._collection.query(
             query_embeddings=[query_embedding],
@@ -33,7 +33,11 @@ def render_app(vectordb, ask_question_fn=ask_question):
     if not query:
         return
 
-    answer, docs = ask_question_fn(query, vectordb)
+    try:
+        answer, docs = ask_question_fn(query, vectordb)
+    except Exception as exc:
+        st.error(f"Failed to generate answer: {exc}")
+        return
 
     st.subheader("Answer")
     st.write(answer)

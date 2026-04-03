@@ -505,48 +505,66 @@ class TestRetrieveRelevantChunks:
 
     # --- similarity_search called with correct k ---------------------------
 
-    def test_similarity_search_called_with_k20_no_intent(self):
+    def test_similarity_search_called_with_k5_no_intent(self):
         db = self._mock_db()
         retrieve_relevant_chunks("hello world", db)
-        db.similarity_search.assert_called_once_with("hello world", k=20)
+        db.similarity_search.assert_called_once_with("hello world", k=5)
 
-    def test_similarity_search_called_with_k20_with_intent(self):
-        db = self._mock_db()
+    def test_similarity_search_called_with_k5_with_intent(self):
+        db = self._mock_db([_doc("trend_summary"), _doc("yearly_summary"), _doc("monthly_summary")])
         retrieve_relevant_chunks("sales trend", db)
-        _, kwargs = db.similarity_search.call_args
-        assert kwargs.get("k") == 20
+        _, kwargs = db.similarity_search.call_args_list[0]
+        assert kwargs.get("k") == 5
 
     # --- filter is passed when intent is detected --------------------------
 
     def test_filter_passed_when_intent_detected(self):
-        db = self._mock_db()
+        db = self._mock_db([_doc("trend_summary"), _doc("yearly_summary"), _doc("monthly_summary")])
         retrieve_relevant_chunks("sales trend", db)
-        _, kwargs = db.similarity_search.call_args
+        _, kwargs = db.similarity_search.call_args_list[0]
         assert "filter" in kwargs
 
     def test_filter_is_chromadb_where_dict(self):
         """filter must use the {type: {$in: [...]}} ChromaDB format."""
-        db = self._mock_db()
+        db = self._mock_db([_doc("trend_summary"), _doc("yearly_summary"), _doc("monthly_summary")])
         retrieve_relevant_chunks("sales trend", db)
-        _, kwargs = db.similarity_search.call_args
+        _, kwargs = db.similarity_search.call_args_list[0]
         f = kwargs["filter"]
         assert "type" in f
         assert "$in" in f["type"]
         assert isinstance(f["type"]["$in"], list)
 
     def test_filter_contains_expected_types_for_trend(self):
-        db = self._mock_db()
+        db = self._mock_db([_doc("trend_summary"), _doc("yearly_summary"), _doc("monthly_summary")])
         retrieve_relevant_chunks("sales trend", db)
-        _, kwargs = db.similarity_search.call_args
+        _, kwargs = db.similarity_search.call_args_list[0]
         types_in_filter = kwargs["filter"]["type"]["$in"]
         assert "trend_summary" in types_in_filter
 
     def test_filter_contains_expected_types_for_city(self):
-        db = self._mock_db()
+        db = self._mock_db([_doc("city_summary"), _doc("city_summary"), _doc("city_summary")])
         retrieve_relevant_chunks("sales in each city", db)
-        _, kwargs = db.similarity_search.call_args
+        _, kwargs = db.similarity_search.call_args_list[0]
         types_in_filter = kwargs["filter"]["type"]["$in"]
         assert "city_summary" in types_in_filter
+
+    def test_falls_back_to_unfiltered_search_when_filtered_results_too_few(self):
+        db = MagicMock()
+        db.similarity_search.side_effect = [
+            [_doc("trend_summary")],
+            [_doc("trend_summary"), _doc("yearly_summary")],
+        ]
+
+        retrieve_relevant_chunks("sales trend", db)
+
+        assert db.similarity_search.call_count == 2
+        first_args, first_kwargs = db.similarity_search.call_args_list[0]
+        second_args, second_kwargs = db.similarity_search.call_args_list[1]
+        assert first_args[0] == "sales trend"
+        assert first_kwargs["k"] == 5
+        assert "filter" in first_kwargs
+        assert second_args[0] == "sales trend"
+        assert second_kwargs == {"k": 5}
 
     # --- no filter when intent is None ------------------------------------
 

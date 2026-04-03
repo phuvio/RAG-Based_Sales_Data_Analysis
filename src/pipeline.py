@@ -2,7 +2,7 @@ from langchain_ollama import OllamaLLM
 from retrieval import retrieve_relevant_chunks as retrieve
 
 
-llm = OllamaLLM(model="mistral-7b-instruct-v0.1.Q4_0.gguf")
+llm = OllamaLLM(model="mistral")
 
 
 def generate_answer(query, retrieved_docs):
@@ -22,8 +22,15 @@ def generate_answer(query, retrieved_docs):
     prompt = build_prompt(query, retrieved_docs)
     
     # Generate and return the answer from the LLM.
-    answer = llm.invoke(prompt)
-    return answer.strip()
+    try:
+        answer = llm.invoke(prompt)
+        return answer.strip()
+    except Exception as exc:
+        # Most common runtime failure is Ollama not running on localhost:11434.
+        return (
+            "LLM connection failed. Start Ollama and ensure the selected model is available. "
+            f"Details: {exc}"
+        )
 
 def build_prompt(query, retrieved_docs):
     """
