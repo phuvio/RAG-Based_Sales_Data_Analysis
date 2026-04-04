@@ -3,9 +3,10 @@ from retrieval import retrieve_relevant_chunks as retrieve
 
 
 llm = OllamaLLM(model="mistral")
+chat_history = []
 
 
-def generate_answer(query, retrieved_docs):
+def generate_answer(query, retrieved_docs, chat_history):
     """
     Generate a natural language answer to the query based on the retrieved
     documents.
@@ -19,7 +20,7 @@ def generate_answer(query, retrieved_docs):
         str: The generated answer text.
     """
     # Create a prompt that includes the query and the retrieved documents.
-    prompt = build_prompt(query, retrieved_docs)
+    prompt = build_prompt(query, retrieved_docs, chat_history)
     
     # Generate and return the answer from the LLM.
     try:
@@ -32,7 +33,7 @@ def generate_answer(query, retrieved_docs):
             f"Details: {exc}"
         )
 
-def build_prompt(query, retrieved_docs):
+def build_prompt(query, retrieved_docs, chat_history):
     """
     Build a prompt for the LLM that includes the user's query and the retrieved
     documents.
@@ -40,11 +41,13 @@ def build_prompt(query, retrieved_docs):
     Args:
         query (str): The user's natural language question.
         retrieved_docs (list[Document]): A list of relevant Document objects.
+        chat_history (list[str]): A list of previous chat messages.
 
     Returns:
         str: The constructed prompt text.
     """
     context = "\n\n".join([doc.page_content for doc in retrieved_docs])
+    history = "\n\n".join(chat_history)
 
     prompt = f"""
         SYSTEM:
@@ -54,6 +57,9 @@ def build_prompt(query, retrieved_docs):
         CONTEXT:
         Use ONLY the following data:
         {context}
+        
+        CHAT HISTORY:
+        {history}
 
         RULES:
         - Do NOT use knowledge outside the provided context.
@@ -75,6 +81,9 @@ def ask_question(query, vectordb):
     docs = retrieve(query, vectordb)
     
     # 2. Generate
-    answer = generate_answer(query, docs)
+    answer = generate_answer(query, docs, chat_history)
+
+    chat_history.append(f"User: {query}")
+    chat_history.append(f"Assistant: {answer}")
     
     return answer, docs
