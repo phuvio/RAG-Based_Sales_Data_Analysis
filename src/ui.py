@@ -42,7 +42,7 @@ def render_app(vectordb, ask_question_fn=ask_question):
     st.subheader("Answer")
     st.write(answer)
 
-    st.subheader("Sources")
+    st.subheader("Documents received from retrieval")
     for doc in docs:
         st.write(doc.page_content)
 

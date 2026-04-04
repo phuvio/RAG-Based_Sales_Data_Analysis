@@ -190,6 +190,41 @@ class TestAskQuestion:
         assert "User: Question 1?" in pipeline.chat_history
         assert "Assistant: First answer" in pipeline.chat_history
 
+    def test_ask_question_keeps_only_last_three_previous_prompts(self, monkeypatch):
+        mock_docs = [Document(page_content="retrieved", metadata={"type": "row"})]
+        captured_histories = []
+
+        mock_retrieve = MagicMock(return_value=mock_docs)
+
+        def _generate_answer(query, docs, history):
+            captured_histories.append(list(history))
+            return f"Answer {len(captured_histories)}"
+
+        mock_generate = MagicMock(side_effect=_generate_answer)
+
+        monkeypatch.setattr(pipeline, "retrieve", mock_retrieve)
+        monkeypatch.setattr(pipeline, "generate_answer", mock_generate)
+        pipeline.chat_history.clear()
+
+        for index in range(5):
+            pipeline.ask_question(f"Question {index + 1}?", object())
+
+        assert len(pipeline.chat_history) == 6
+        assert "User: Question 1?" not in pipeline.chat_history
+        assert "Assistant: Answer 1" not in pipeline.chat_history
+        assert "User: Question 3?" in pipeline.chat_history
+        assert "Assistant: Answer 5" in pipeline.chat_history
+
+        fifth_call_history = captured_histories[4]
+        assert fifth_call_history == [
+            "User: Question 2?",
+            "Assistant: Answer 2",
+            "User: Question 3?",
+            "Assistant: Answer 3",
+            "User: Question 4?",
+            "Assistant: Answer 4",
+        ]
+
     def test_ask_question_preserves_document_list_from_retrieve(self, monkeypatch):
         docs = [
             Document(page_content="a", metadata={}),

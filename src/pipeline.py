@@ -3,6 +3,7 @@ from retrieval import retrieve_relevant_chunks as retrieve
 
 
 llm = OllamaLLM(model="mistral")
+MAX_CHAT_HISTORY_PROMPTS = 3
 chat_history = []
 
 
@@ -79,7 +80,8 @@ def build_prompt(query, retrieved_docs, chat_history):
 def ask_question(query, vectordb):
     """
     Process a user query by retrieving relevant documents and generating an answer.
-    Maintains chat history for multi-turn conversations.
+    Maintains chat history for multi-turn conversations, keeping only the
+    last 3 prompt-answer pairs.
 
     Args:
         query (str): The user's natural language question.
@@ -97,5 +99,8 @@ def ask_question(query, vectordb):
 
     chat_history.append(f"User: {query}")
     chat_history.append(f"Assistant: {answer}")
+    max_history_entries = MAX_CHAT_HISTORY_PROMPTS * 2
+    if len(chat_history) > max_history_entries:
+        del chat_history[:-max_history_entries]
     
     return answer, docs
