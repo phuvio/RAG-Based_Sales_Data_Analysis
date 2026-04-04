@@ -538,6 +538,88 @@ def create_segment_comparison_doc(df):
 
     return docs
 
+def create_overall_stats_doc(df):
+    docs = []
+    
+    text = (
+        f"Overall statistics: Average sales per order is {round(df['Sales'].mean(),2)}€, "
+        f"median sales is {round(df['Sales'].median(),2)}€. "
+        f"Average profit is {round(df['Profit'].mean(),2)}€, median profit is {round(df['Profit'].median(),2)}€. "
+        f"Average discount is {round(df['Discount'].mean(),2)}."
+    )
+
+    docs.append({
+        "text": text,
+        "metadata": {"type": "overall_statistics"}
+    })
+
+    return docs
+
+def create_category_stats_docs(df):
+    docs = []
+    
+    grouped = df.groupby("Category").agg({
+        "Sales": ["mean", "median"],
+        "Profit": ["mean", "median"]
+    }).reset_index()
+
+    grouped.columns = ["Category", "Sales_mean", "Sales_median", "Profit_mean", "Profit_median"]
+
+    for _, row in grouped.iterrows():
+        text = (
+            f"For category {row['Category']}, average sales is {round(row['Sales_mean'],2)}€, "
+            f"median sales is {round(row['Sales_median'],2)}€. "
+            f"Average profit is {round(row['Profit_mean'],2)}€, median profit is {round(row['Profit_median'],2)}€."
+        )
+
+        docs.append({
+            "text": text,
+            "metadata": {
+                "type": "category_statistics",
+                "category": row["Category"]
+            }
+        })
+
+    return docs
+
+def create_top_bottom_docs(df):
+    docs = []
+    
+    grouped = df.groupby("Product Name")["Profit"].sum().reset_index()
+
+    top = grouped.sort_values("Profit", ascending=False).head(3)
+    bottom = grouped.sort_values("Profit", ascending=True).head(3)
+
+    text = (
+        "Top 3 products by profit: " +
+        ", ".join([f"{row['Product Name']} ({round(row['Profit'],2)}€)" for _, row in top.iterrows()]) +
+        ". Lowest performing products: " +
+        ", ".join([f"{row['Product Name']} ({round(row['Profit'],2)}€)" for _, row in bottom.iterrows()])
+    )
+
+    docs.append({
+        "text": text,
+        "metadata": {"type": "top_bottom_products"}
+    })
+
+    return docs
+
+def create_distribution_doc(df):
+    docs = []
+    
+    text = (
+        f"Sales distribution: minimum {round(df['Sales'].min(),2)}€, "
+        f"maximum {round(df['Sales'].max(),2)}€, "
+        f"standard deviation {round(df['Sales'].std(),2)}€. "
+        f"Profit ranges from {round(df['Profit'].min(),2)}€ to {round(df['Profit'].max(),2)}€."
+    )
+
+    docs.append({
+        "text": text,
+        "metadata": {"type": "distribution_summary"}
+    })
+
+    return docs
 
 def generate_all_documents(df):
     docs = []
@@ -562,5 +644,8 @@ def generate_all_documents(df):
     docs.extend(create_region_category_docs(df))
     docs.extend(create_top_customers_doc(df))
     docs.extend(create_segment_comparison_doc(df))
-
+    docs.extend(create_overall_stats_doc(df))
+    docs.extend(create_category_stats_docs(df))
+    docs.extend(create_top_bottom_docs(df))
+    docs.extend(create_distribution_doc(df))
     return docs
