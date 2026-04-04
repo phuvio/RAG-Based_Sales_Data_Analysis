@@ -9,12 +9,13 @@ chat_history = []
 def generate_answer(query, retrieved_docs, chat_history):
     """
     Generate a natural language answer to the query based on the retrieved
-    documents.
+    documents and chat history.
 
     Args:
         query (str): The user's natural language question.
         retrieved_docs (list[Document]): A list of relevant Document objects
             retrieved from the vector store.
+        chat_history (list[str]): A list of previous chat messages for context.
 
     Returns:
         str: The generated answer text.
@@ -76,7 +77,18 @@ def build_prompt(query, retrieved_docs, chat_history):
     return prompt
 
 def ask_question(query, vectordb):
-    
+    """
+    Process a user query by retrieving relevant documents and generating an answer.
+    Maintains chat history for multi-turn conversations.
+
+    Args:
+        query (str): The user's natural language question.
+        vectordb: The vector database to retrieve documents from.
+
+    Returns:
+        tuple: (answer, docs) where answer is the generated response text and
+               docs is the list of retrieved Document objects.
+    """
     # 1. Retrieve
     docs = retrieve(query, vectordb)
     
