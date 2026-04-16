@@ -8,6 +8,9 @@ A Retrieval-Augmented Generation (RAG) system for analysing a real-world sales d
 CSV data
    │
    ▼
+data_preparation.iypnb   ← data cleaning and preparations
+   │
+   ▼
 generate_documents.py   ← converts rows and aggregates into plain-text documents
    │
    ▼
@@ -37,6 +40,10 @@ ui.py                   ← Streamlit front-end; renders questions, answers and 
 | LLM | Mistral (served locally via Ollama) |
 | LLM integration | LangChain Ollama |
 | Front-end | Streamlit |
+
+Different chuncking strategies were tested ([test_chunking_strategies.iypnb](./Notebooks/test_chunking_strategies.ipynb)). Because all the documents were shorter than 500 characters and most of them shorter than 300 character, no chunking was used.
+
+Test queries and results can be found in [analysis.iypnb](./Notebooks/analysis.ipynb).
 
 ## Dataset
 
